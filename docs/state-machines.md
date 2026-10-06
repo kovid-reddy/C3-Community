@@ -1,0 +1,67 @@
+# State Machines Specification
+
+## 1. Provider State Machine
+
+States: `OFFLINE`, `STARTING`, `ONLINE`, `AVAILABLE`, `REQUESTED`, `ACCEPTED`, `CONNECTING`, `CONNECTED`, `STOPPING`, `ERROR`.
+
+### Valid Transitions:
+- `OFFLINE` → `STARTING`
+- `STARTING` → `ONLINE` | `ERROR`
+- `ONLINE` → `AVAILABLE` | `STOPPING` | `ERROR`
+- `AVAILABLE` → `REQUESTED` | `STOPPING` | `ERROR`
+- `REQUESTED` → `ACCEPTED` | `AVAILABLE` (if declined/expired) | `ERROR`
+- `ACCEPTED` → `CONNECTING` | `ERROR`
+- `CONNECTING` → `CONNECTED` | `ERROR`
+- `CONNECTED` → `STOPPING` | `ERROR`
+- `STOPPING` → `OFFLINE` | `ERROR`
+- `ERROR` → `OFFLINE`
+
+---
+
+## 2. Provider Request State Machine
+
+States: `CREATED`, `PENDING`, `ACCEPTED`, `DECLINED`, `EXPIRED`, `CANCELLED`, `COMPLETED`.
+
+### Valid Transitions:
+- `CREATED` → `PENDING`
+- `PENDING` → `ACCEPTED` | `DECLINED` | `EXPIRED` | `CANCELLED`
+- `ACCEPTED` → `COMPLETED` | `CANCELLED`
+
+---
+
+## 3. Provider Session State Machine
+
+States: `CREATED`, `APPROVED`, `CONNECTING`, `CONNECTED`, `DISCONNECTING`, `DISCONNECTED`, `FAILED`.
+
+### Valid Transitions:
+- `CREATED` → `APPROVED` | `FAILED`
+- `APPROVED` → `CONNECTING` | `FAILED`
+- `CONNECTING` → `CONNECTED` | `FAILED`
+- `CONNECTED` → `DISCONNECTING` | `FAILED`
+- `DISCONNECTING` → `DISCONNECTED` | `FAILED`
+
+---
+
+## 4. Cluster State Machine
+
+States: `STOPPED`, `STARTING`, `READY`, `DEGRADED`, `STOPPING`, `ERROR`.
+
+### Valid Transitions:
+- `STOPPED` → `STARTING`
+- `STARTING` → `READY` | `ERROR`
+- `READY` → `DEGRADED` | `STOPPING` | `ERROR`
+- `DEGRADED` → `READY` | `STOPPING` | `ERROR`
+- `STOPPING` → `STOPPED` | `ERROR`
+- `ERROR` → `STOPPED`
+
+---
+
+## 5. Job State Machine
+
+States: `CREATED`, `QUEUED`, `STARTING`, `RUNNING`, `COMPLETED`, `FAILED`, `CANCELLED`.
+
+### Valid Transitions:
+- `CREATED` → `QUEUED` | `CANCELLED`
+- `QUEUED` → `STARTING` | `CANCELLED`
+- `STARTING` → `RUNNING` | `FAILED` | `CANCELLED`
+- `RUNNING` → `COMPLETED` | `FAILED` | `CANCELLED`

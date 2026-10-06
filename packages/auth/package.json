@@ -1,0 +1,14 @@
+{
+  "name": "@c3/auth",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "tsc --build"
+  },
+  "dependencies": {
+    "@c3/contracts": "workspace:*",
+    "@c3/foundation": "workspace:*"
+  }
+}

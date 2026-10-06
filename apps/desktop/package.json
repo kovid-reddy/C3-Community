@@ -1,0 +1,26 @@
+{
+  "name": "@c3/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/main/index.js",
+  "scripts": {
+    "build": "tsc --build"
+  },
+  "dependencies": {
+    "@c3/auth": "workspace:*",
+    "@c3/cloud": "workspace:*",
+    "@c3/cluster": "workspace:*",
+    "@c3/compute": "workspace:*",
+    "@c3/contracts": "workspace:*",
+    "@c3/discovery": "workspace:*",
+    "@c3/foundation": "workspace:*",
+    "@c3/hardware": "workspace:*",
+    "@c3/jobs": "workspace:*",
+    "@c3/provider": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18"
+  }
+}

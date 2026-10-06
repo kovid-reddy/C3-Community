@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "references": [
+    { "path": "../../packages/contracts" },
+    { "path": "../../packages/foundation" },
+    { "path": "../../packages/auth" },
+    { "path": "../../packages/cloud" },
+    { "path": "../../packages/hardware" },
+    { "path": "../../packages/provider" },
+    { "path": "../../packages/discovery" },
+    { "path": "../../packages/cluster" },
+    { "path": "../../packages/compute" },
+    { "path": "../../packages/jobs" }
+  ],
+  "include": ["src/**/*"]
+}
