@@ -3,6 +3,8 @@
  * Unified application error model for structured error handling across services.
  */
 
+import { sanitizeLogMetadata } from './logging';
+
 export type AppErrorCategory =
   | 'VALIDATION_ERROR'
   | 'AUTH_ERROR'
@@ -40,23 +42,100 @@ export class AppError extends Error {
     this.retryable = options.retryable ?? false;
     this.cause = options.cause;
     if (options.metadata !== undefined) {
-      this.metadata = options.metadata;
+      this.metadata = Object.freeze({ ...options.metadata });
     }
     Object.setPrototypeOf(this, new.target.prototype);
   }
 
   toJSON(): Record<string, unknown> {
-    const result: Record<string, unknown> = {
-      name: this.name,
-      code: this.code,
-      category: this.category,
-      message: this.message,
-      retryable: this.retryable,
-      cause: this.cause instanceof Error ? this.cause.message : this.cause,
-    };
-    if (this.metadata !== undefined) {
-      result.metadata = this.metadata;
-    }
-    return result;
+    return serializeError(this);
   }
+}
+
+/**
+ * Type guard to check if an error is an AppError instance.
+ */
+export function isAppError(err: unknown): err is AppError {
+  return err instanceof AppError || (err instanceof Error && err.name === 'AppError' && 'category' in err && 'code' in err);
+}
+
+/**
+ * Normalizes any error or unknown thrown value into a consistent AppError.
+ */
+export function normalizeError(
+  err: unknown,
+  defaultCategory: AppErrorCategory = 'INTERNAL_ERROR',
+  defaultCode = 'ERR_INTERNAL_ERROR'
+): AppError {
+  if (isAppError(err)) {
+    return err;
+  }
+
+  if (err instanceof Error) {
+    return new AppError({
+      code: defaultCode,
+      category: defaultCategory,
+      message: err.message || 'An unexpected error occurred.',
+      cause: err,
+      metadata: { originalName: err.name },
+    });
+  }
+
+  if (typeof err === 'string') {
+    return new AppError({
+      code: defaultCode,
+      category: defaultCategory,
+      message: err,
+      cause: err,
+    });
+  }
+
+  return new AppError({
+    code: defaultCode,
+    category: defaultCategory,
+    message: 'An unknown error occurred.',
+    cause: err,
+  });
+}
+
+/**
+ * Safely serializes an error into a JSON-friendly object, ensuring secret redaction.
+ */
+export function serializeError(
+  err: unknown,
+  includeStack = false
+): Record<string, unknown> {
+  const normalized = normalizeError(err);
+
+  const serialized: Record<string, unknown> = {
+    name: normalized.name,
+    code: normalized.code,
+    category: normalized.category,
+    message: normalized.message,
+    retryable: normalized.retryable,
+  };
+
+  if (includeStack && normalized.stack) {
+    serialized.stack = normalized.stack;
+  }
+
+  if (normalized.cause !== undefined) {
+    if (normalized.cause instanceof Error) {
+      serialized.cause = {
+        name: normalized.cause.name,
+        message: normalized.cause.message,
+        ...(includeStack && normalized.cause.stack ? { stack: normalized.cause.stack } : {}),
+      };
+    } else if (typeof normalized.cause === 'object' && normalized.cause !== null) {
+      serialized.cause = sanitizeLogMetadata(normalized.cause as Record<string, unknown>);
+    } else {
+      serialized.cause = normalized.cause;
+    }
+  }
+
+  if (normalized.metadata !== undefined) {
+    serialized.metadata = sanitizeLogMetadata(normalized.metadata);
+  }
+
+  return serialized;
 }

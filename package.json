@@ -10,7 +10,8 @@
   "scripts": {
     "build": "tsc --build",
     "typecheck": "tsc --build --dry",
-    "test": "vitest run"
+    "test": "vitest run",
+    "verify-deps": "node scripts/verify-deps.js"
   },
   "devDependencies": {
     "typescript": "^5.3.3",
