@@ -103,7 +103,57 @@ function verifyMonorepoDag() {
   console.log('✅ Monorepo DAG dependency graph verified successfully.');
 }
 
+function verifyDesktopIsolation() {
+  console.log('🔍 Checking Desktop App package isolation...');
+  const desktopSrc = path.join(__dirname, '..', 'apps', 'desktop', 'src');
+  const tsFiles = getAllTsFiles(desktopSrc);
+
+  const FORBIDDEN_DESKTOP_IMPORTS = [
+    '@c3/auth',
+    '@c3/cloud',
+    '@c3/cluster',
+    '@c3/compute',
+    '@c3/discovery',
+    '@c3/hardware',
+    '@c3/jobs',
+    '@c3/provider',
+    'aws-sdk',
+    '@aws-sdk',
+    'dockerode',
+    'kubernetes-client',
+  ];
+
+  let errors = 0;
+
+  for (const file of tsFiles) {
+    const content = fs.readFileSync(file, 'utf8');
+    const importLines = content.match(/import\s+.*?from\s+['"]([^'"]+)['"]/g) || [];
+
+    for (const line of importLines) {
+      const match = line.match(/from\s+['"]([^'"]+)['"]/);
+      if (match) {
+        const importPath = match[1];
+
+        for (const forbidden of FORBIDDEN_DESKTOP_IMPORTS) {
+          if (importPath === forbidden || importPath.startsWith(`${forbidden}/`)) {
+            console.error(`❌ Dependency Error in ${file}: Desktop illegally imports '${importPath}'`);
+            errors++;
+          }
+        }
+      }
+    }
+  }
+
+  if (errors > 0) {
+    console.error(`❌ Desktop package isolation failed with ${errors} error(s).`);
+    process.exit(1);
+  } else {
+    console.log('✅ Desktop package isolation verified successfully. No forbidden feature modules imported.');
+  }
+}
+
 console.log('=== C3 Monorepo Dependency Verification ===');
 verifyFoundationIsolation();
+verifyDesktopIsolation();
 verifyMonorepoDag();
 console.log('=== All Dependency Rules Passed ===');

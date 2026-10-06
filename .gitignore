@@ -7,9 +7,13 @@ package-lock.json
 
 # Build outputs
 dist/
+dist-electron/
+dist-renderer/
 out/
 build/
 *.tsbuildinfo
+vite.config.js*
+vite.config.d.ts*
 
 # Environment & Secrets
 .env

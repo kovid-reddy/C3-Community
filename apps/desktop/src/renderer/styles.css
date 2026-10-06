@@ -1,0 +1,214 @@
+/**
+ * C3 Desktop Shell — Renderer Styles
+ * Minimal shell-level styles only. No C3 product design system yet.
+ */
+
+/* ── Reset & Base ─────────────────────────────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --c3-bg:            #0d0d0f;
+  --c3-surface:       #141418;
+  --c3-surface-2:     #1c1c22;
+  --c3-border:        #2a2a35;
+  --c3-accent:        #6366f1;
+  --c3-accent-glow:   rgba(99, 102, 241, 0.18);
+  --c3-text-primary:  #f0f0f4;
+  --c3-text-secondary:#8888a8;
+  --c3-green:         #22d3a4;
+  --c3-yellow:        #f59e0b;
+  --c3-red:           #ef4444;
+  --c3-radius:        12px;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background: var(--c3-bg);
+  color: var(--c3-text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+/* ── Shell Root ───────────────────────────────────────────────────────────── */
+
+.shell-root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 40px 24px;
+  gap: 32px;
+}
+
+/* ── Header ───────────────────────────────────────────────────────────────── */
+
+.shell-header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.shell-logo {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -3px;
+}
+
+.logo-c {
+  color: var(--c3-text-primary);
+}
+
+.logo-three {
+  color: var(--c3-accent);
+  text-shadow: 0 0 40px var(--c3-accent-glow);
+}
+
+.shell-header h1 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--c3-text-primary);
+  letter-spacing: 0.02em;
+}
+
+.shell-subtitle {
+  font-size: 13px;
+  color: var(--c3-text-secondary);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ── Status Panel ─────────────────────────────────────────────────────────── */
+
+.shell-status {
+  background: var(--c3-surface);
+  border: 1px solid var(--c3-border);
+  border-radius: var(--c3-radius);
+  padding: 20px 28px;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-label {
+  font-size: 13px;
+  color: var(--c3-text-secondary);
+}
+
+.status-value {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-value.ok   { color: var(--c3-green); }
+.status-value.pending { color: var(--c3-yellow); }
+
+/* ── Security Panel ───────────────────────────────────────────────────────── */
+
+.shell-security {
+  background: var(--c3-surface);
+  border: 1px solid var(--c3-border);
+  border-radius: var(--c3-radius);
+  padding: 20px 28px;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.shell-security h2 {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--c3-text-secondary);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--c3-border);
+}
+
+.security-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.security-label {
+  font-size: 13px;
+  color: var(--c3-text-secondary);
+  font-family: 'Courier New', monospace;
+}
+
+.security-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.security-badge.blocked {
+  background: rgba(34, 211, 164, 0.12);
+  color: var(--c3-green);
+}
+
+.security-badge.exposed {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--c3-red);
+}
+
+.security-overall {
+  margin-top: 6px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.security-overall.secure {
+  background: rgba(34, 211, 164, 0.08);
+  color: var(--c3-green);
+  border: 1px solid rgba(34, 211, 164, 0.2);
+}
+
+.security-overall.warning {
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--c3-red);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* ── Footer ───────────────────────────────────────────────────────────────── */
+
+.shell-footer {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.shell-footer p {
+  font-size: 11px;
+  color: var(--c3-text-secondary);
+  opacity: 0.6;
+}

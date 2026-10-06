@@ -2,25 +2,29 @@
   "name": "@c3/desktop",
   "version": "0.1.0",
   "private": true,
-  "main": "dist/main/index.js",
+  "main": "dist-electron/main/index.js",
   "scripts": {
-    "build": "tsc --build"
+    "dev": "vite",
+    "build": "tsc --build && vite build",
+    "build:vite": "vite build",
+    "typecheck": "tsc --build --dry",
+    "electron:dev": "vite",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@c3/auth": "workspace:*",
-    "@c3/cloud": "workspace:*",
-    "@c3/cluster": "workspace:*",
-    "@c3/compute": "workspace:*",
     "@c3/contracts": "workspace:*",
-    "@c3/discovery": "workspace:*",
     "@c3/foundation": "workspace:*",
-    "@c3/hardware": "workspace:*",
-    "@c3/jobs": "workspace:*",
-    "@c3/provider": "workspace:*"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "@types/react": "^18.2.48",
-    "@types/react-dom": "^18.2.18"
+    "@types/react-dom": "^18.2.18",
+    "@vitejs/plugin-react": "^4.2.0",
+    "electron": "^33.0.0",
+    "vite": "^5.0.0",
+    "vite-plugin-electron": "^0.28.0",
+    "vite-plugin-electron-renderer": "^0.14.0"
   }
 }
