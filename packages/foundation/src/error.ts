@@ -139,3 +139,30 @@ export function serializeError(
 
   return serialized;
 }
+
+/**
+ * Reconstructs an AppError instance from a serialized error object (e.g. across IPC boundary).
+ */
+export function deserializeError(serialized: unknown): AppError {
+  if (isAppError(serialized)) {
+    return serialized;
+  }
+
+  if (typeof serialized === 'object' && serialized !== null) {
+    const s = serialized as Record<string, unknown>;
+    const options: AppErrorOptions = {
+      code: typeof s['code'] === 'string' ? s['code'] : 'ERR_INTERNAL_ERROR',
+      category: (s['category'] as AppErrorCategory) || 'INTERNAL_ERROR',
+      message: typeof s['message'] === 'string' ? s['message'] : 'An unexpected error occurred.',
+      retryable: Boolean(s['retryable']),
+    };
+
+    if (typeof s['metadata'] === 'object' && s['metadata'] !== null) {
+      (options as { metadata?: Record<string, unknown> }).metadata = s['metadata'] as Record<string, unknown>;
+    }
+
+    return new AppError(options);
+  }
+
+  return normalizeError(serialized);
+}

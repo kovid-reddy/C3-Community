@@ -1,68 +1,96 @@
 /**
- * C3 Desktop Shell — Preload Script
+ * C3 Desktop Shell — Preload Script (Security Boundary)
  *
- * Security design:
- *   - Runs with Node.js access (preload context) but is isolated from the renderer
- *   - Only explicitly allowlisted APIs are exposed to the renderer via contextBridge
- *   - ipcRenderer is never exposed directly; only a controlled invoke wrapper is provided
- *   - No Node modules, no Electron internals, no process object is forwarded
+ * Security topology:
+ *   - Isolated JS context (`contextIsolation: true`)
+ *   - No Node.js APIs, no Electron internals exposed directly to window
+ *   - Strict IPC channel allowlist via typed `safeInvoke` transport wrapper
+ *   - Transport envelope unwrapping and AppError deserialization across boundary
  *
- * The renderer can ONLY call the methods listed here.
- * Any future IPC channels MUST be explicitly registered here.
+ * The renderer can ONLY communicate via window.c3Shell.
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
+import {
+  IPC_CHANNELS,
+  type IpcChannelMap,
+  type IpcResponseEnvelope,
+  type User,
+  type HardwareInfo,
+  type ProviderStatus,
+} from '@c3/contracts';
+import { deserializeError, isIpcSuccess, AppError } from '@c3/foundation';
 
-// ── Allowed IPC channels ──────────────────────────────────────────────────────
-// This is the complete allowlist. The renderer cannot send arbitrary messages.
-// Future stages will expand this list deliberately.
+// ── Allowed IPC channels (Strict Security Allowlist) ─────────────────────────
 
-type AllowedChannel =
-  | 'shell:ping'
-  | 'shell:get-version';
-
-const ALLOWED_INVOKE_CHANNELS: ReadonlySet<string> = new Set<AllowedChannel>([
-  'shell:ping',
-  'shell:get-version',
+const ALLOWED_INVOKE_CHANNELS: ReadonlySet<string> = new Set<string>([
+  IPC_CHANNELS.SHELL_PING,
+  IPC_CHANNELS.SHELL_GET_VERSION,
+  IPC_CHANNELS.AUTH_GET_CURRENT_USER,
+  IPC_CHANNELS.HARDWARE_GET_INFO,
+  IPC_CHANNELS.PROVIDER_GET_STATUS,
 ]);
 
-// ── Type-safe API surface exposed to renderer ─────────────────────────────────
+// ── Safe IPC Invoke Transport Wrapper ──────────────────────────────────────
+
+async function safeInvoke<K extends keyof IpcChannelMap>(
+  channel: K,
+  payload?: IpcChannelMap[K]['request']
+): Promise<IpcChannelMap[K]['response']> {
+  if (!ALLOWED_INVOKE_CHANNELS.has(channel)) {
+    throw new AppError({
+      code: 'ERR_IPC_BLOCKED',
+      category: 'AUTH_ERROR',
+      message: `IPC channel '${channel}' is blocked by preload security allowlist.`,
+    });
+  }
+
+  const response = (await ipcRenderer.invoke(channel, payload)) as IpcResponseEnvelope<IpcChannelMap[K]['response']>;
+
+  if (isIpcSuccess(response)) {
+    return response.data;
+  }
+
+  throw deserializeError(response.error);
+}
+
+// ── Type-safe API Surface Exposed to Renderer ─────────────────────────────
 
 export interface C3ShellAPI {
-  /** Ping the main process — verifies IPC bridge is functioning */
+  /** Ping main process — verifies IPC bridge status */
   ping(): Promise<string>;
-  /** Get application version from main process */
+
+  /** Query application version from main process */
   getVersion(): Promise<string>;
-  /**
-   * Platform identifier — exposed as a static safe value, not process.platform
-   * This does NOT expose the process object.
-   */
-  platform: string;
+
+  /** Query current authenticated user (contracts signature) */
+  getCurrentUser(): Promise<User | null>;
+
+  /** Query local hardware info metrics (contracts signature) */
+  getHardwareInfo(): Promise<HardwareInfo | null>;
+
+  /** Query provider status (contracts signature) */
+  getProviderStatus(): Promise<ProviderStatus | null>;
+
+  /** Static safe platform identifier (e.g. 'win32', 'darwin', 'linux') */
+  readonly platform: string;
 }
 
 const c3ShellAPI: C3ShellAPI = {
-  ping: () => safeInvoke<string>('shell:ping'),
-  getVersion: () => safeInvoke<string>('shell:get-version'),
+  ping: () => safeInvoke('shell:ping'),
+  getVersion: () => safeInvoke('shell:get-version'),
+  getCurrentUser: () => safeInvoke('auth:get-current-user'),
+  getHardwareInfo: () => safeInvoke('hardware:get-info'),
+  getProviderStatus: () => safeInvoke('provider:get-status'),
   platform: process.platform,
 };
 
-// ── Safe invoke wrapper ────────────────────────────────────────────────────────
-
-function safeInvoke<T>(channel: string, payload?: unknown): Promise<T> {
-  if (!ALLOWED_INVOKE_CHANNELS.has(channel)) {
-    return Promise.reject(new Error(`IPC channel '${channel}' is not permitted.`));
-  }
-  return ipcRenderer.invoke(channel, payload) as Promise<T>;
-}
-
-// ── contextBridge registration ─────────────────────────────────────────────────
-// This is the ONLY way data crosses the process boundary.
-// window.c3Shell is the ONLY renderer-accessible API.
+// ── contextBridge Expose ───────────────────────────────────────────────────
 
 contextBridge.exposeInMainWorld('c3Shell', c3ShellAPI);
 
-// ── Global type augmentation (for renderer TypeScript) ─────────────────────────
-// Exported so the renderer can import this type safely.
+// ── Renderer TypeScript Global Augmentation ───────────────────────────────
+
 declare global {
   interface Window {
     c3Shell: C3ShellAPI;

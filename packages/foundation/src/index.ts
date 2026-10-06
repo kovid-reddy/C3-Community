@@ -11,3 +11,4 @@ export * from './id';
 export * from './clock';
 export * from './lifecycle';
 export * from './result';
+export * from './ipc';

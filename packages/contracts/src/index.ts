@@ -298,3 +298,9 @@ export interface JobService {
   getLogs(jobId: string): Promise<readonly string[]>;
   getResults(jobId: string): Promise<JobResult | null>;
 }
+
+// ==========================================
+// 3. IPC CONTRACTS & BOUNDARY
+// ==========================================
+
+export * from './ipc';

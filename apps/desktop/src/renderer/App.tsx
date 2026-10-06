@@ -137,7 +137,7 @@ export function App(): React.JSX.Element {
       </div>
 
       <div className="shell-footer">
-        <p>Stage 2A — Electron Shell Foundation</p>
+        <p>Stage 2B — Secure Preload &amp; Typed IPC Contracts</p>
         <p>C3 features will be enabled in future stages</p>
       </div>
     </div>
