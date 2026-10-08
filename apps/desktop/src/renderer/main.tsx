@@ -1,11 +1,11 @@
 /**
- * C3 Desktop Renderer — React entry point
+ * C3 Desktop Renderer — React Entry Point (main.tsx)
  *
- * Security rules (enforced):
- *   - No direct Node.js API access (typeof process will be undefined/object without fs/child_process)
- *   - No direct ipcRenderer access — only window.c3Shell from preload bridge
- *   - No @c3/auth, @c3/cloud, @c3/hardware, @c3/provider etc. imports
- *   - UI communicates only through window.c3Shell
+ * Bootstraps the React 18 application onto the DOM root node.
+ * Security enforcement:
+ *   - No direct Node.js API access (window.process, window.require, window.module strictly blocked)
+ *   - No direct electron / ipcRenderer imports
+ *   - Renderer accesses desktop capabilities ONLY through window.c3Shell
  */
 
 import React from 'react';
@@ -15,7 +15,7 @@ import './styles.css';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
-  throw new Error('[C3 Renderer] Root mount element #root not found in DOM.');
+  throw new Error('[C3 Renderer] Critical initialization error: Root mount element #root not found in DOM.');
 }
 
 createRoot(rootElement).render(

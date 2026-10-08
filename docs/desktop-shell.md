@@ -64,11 +64,15 @@ apps/desktop/
 │   │   └── ipc-handlers.ts    ← Shell IPC handler registration
 │   ├── preload/               ← Preload script
 │   │   └── index.ts           ← contextBridge definition & C3ShellAPI type
-│   └── renderer/              ← React 18 UI application
+│   └── renderer/              ← React 18 UI application (Stage 2C Foundation)
 │       ├── main.tsx           ← React root mount
-│       ├── App.tsx            ← Shell diagnostic & security status UI
+│       ├── App.tsx            ← Root app component
 │       ├── styles.css         ← Theme & shell layout styling
-│       └── index.ts           ← Renderer public exports
+│       ├── index.ts           ← Renderer public exports
+│       ├── app/               ← AppBoundary & root composition
+│       ├── components/        ← ErrorBoundary, LoadingView, ErrorView, ShellLayout, Cards
+│       ├── services/          ← shellService, useShellInit
+│       └── types/             ← rendererState types (discriminated union)
 └── dist-electron/             ← Output directory for Electron main/preload
 │   ├── main/index.js
 │   └── preload/index.js

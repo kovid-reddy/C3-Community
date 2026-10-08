@@ -1,9 +1,9 @@
 /**
- * C3 Desktop Shell — Renderer Styles
- * Minimal shell-level styles only. No C3 product design system yet.
+ * C3 Desktop Shell — Renderer Foundation Styles
+ * Clean, responsive CSS variables, layout, loading spinner, error cards, and security status styles.
  */
 
-/* ── Reset & Base ─────────────────────────────────────────────────────────── */
+/* ── Reset & Variables ────────────────────────────────────────────────────── */
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -12,18 +12,18 @@
 }
 
 :root {
-  --c3-bg:            #0d0d0f;
-  --c3-surface:       #141418;
-  --c3-surface-2:     #1c1c22;
-  --c3-border:        #2a2a35;
-  --c3-accent:        #6366f1;
-  --c3-accent-glow:   rgba(99, 102, 241, 0.18);
-  --c3-text-primary:  #f0f0f4;
-  --c3-text-secondary:#8888a8;
-  --c3-green:         #22d3a4;
-  --c3-yellow:        #f59e0b;
-  --c3-red:           #ef4444;
-  --c3-radius:        12px;
+  --c3-bg:             #0d0d11;
+  --c3-surface:        #14141c;
+  --c3-surface-hover:  #1b1b26;
+  --c3-border:         #272736;
+  --c3-accent:         #6366f1;
+  --c3-accent-glow:    rgba(99, 102, 241, 0.2);
+  --c3-text-primary:   #f3f4f6;
+  --c3-text-secondary: #9ca3af;
+  --c3-green:          #10b981;
+  --c3-yellow:         #f59e0b;
+  --c3-red:            #ef4444;
+  --c3-radius:         12px;
   font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
@@ -35,9 +35,131 @@ body {
   user-select: none;
 }
 
-/* ── Shell Root ───────────────────────────────────────────────────────────── */
+.code-font {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
 
-.shell-root {
+/* ── Status / Loading / Error Containers ──────────────────────────────────── */
+
+.status-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 32px 24px;
+  text-align: center;
+  gap: 16px;
+}
+
+.loading-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--c3-border);
+  border-top-color: var(--c3-accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--c3-text-primary);
+}
+
+.loading-subtitle {
+  font-size: 13px;
+  color: var(--c3-text-secondary);
+}
+
+.error-view {
+  background: rgba(239, 68, 68, 0.04);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: var(--c3-radius);
+  max-width: 480px;
+  margin: auto;
+}
+
+.error-badge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--c3-red);
+  background: rgba(239, 68, 68, 0.12);
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+
+.error-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--c3-text-primary);
+}
+
+.error-code-label {
+  font-size: 13px;
+  color: var(--c3-text-secondary);
+}
+
+.btn-primary {
+  margin-top: 12px;
+  background: var(--c3-accent);
+  color: #ffffff;
+  border: none;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+/* ── Error Boundary ───────────────────────────────────────────────────────── */
+
+.error-boundary-root {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.error-boundary-card {
+  background: var(--c3-surface);
+  border: 1px solid var(--c3-border);
+  border-radius: var(--c3-radius);
+  padding: 32px 24px;
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.error-boundary-icon {
+  font-size: 40px;
+}
+
+.error-boundary-text {
+  font-size: 13px;
+  color: var(--c3-text-secondary);
+  line-height: 1.5;
+}
+
+/* ── Shell Layout ─────────────────────────────────────────────────────────── */
+
+.shell-layout {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -45,9 +167,9 @@ body {
   min-height: 100vh;
   padding: 40px 24px;
   gap: 32px;
+  max-width: 540px;
+  margin: 0 auto;
 }
-
-/* ── Header ───────────────────────────────────────────────────────────────── */
 
 .shell-header {
   text-align: center;
@@ -76,7 +198,7 @@ body {
   text-shadow: 0 0 40px var(--c3-accent-glow);
 }
 
-.shell-header h1 {
+.shell-title {
   font-size: 18px;
   font-weight: 600;
   color: var(--c3-text-primary);
@@ -90,18 +212,39 @@ body {
   text-transform: uppercase;
 }
 
-/* ── Status Panel ─────────────────────────────────────────────────────────── */
+.shell-main {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
 
-.shell-status {
+/* ── Card Panel ───────────────────────────────────────────────────────────── */
+
+.card-panel {
   background: var(--c3-surface);
   border: 1px solid var(--c3-border);
   border-radius: var(--c3-radius);
-  padding: 20px 28px;
-  width: 100%;
-  max-width: 480px;
+  padding: 20px 24px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.card-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--c3-text-secondary);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--c3-border);
+}
+
+.card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .status-row {
@@ -121,63 +264,28 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.status-value.ok   { color: var(--c3-green); }
-.status-value.pending { color: var(--c3-yellow); }
+.status-ok      { color: var(--c3-green); }
+.status-pending { color: var(--c3-yellow); }
+.status-error   { color: var(--c3-red); }
 
-/* ── Security Panel ───────────────────────────────────────────────────────── */
-
-.shell-security {
-  background: var(--c3-surface);
-  border: 1px solid var(--c3-border);
-  border-radius: var(--c3-radius);
-  padding: 20px 28px;
-  width: 100%;
-  max-width: 480px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.shell-security h2 {
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--c3-text-secondary);
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--c3-border);
-}
-
-.security-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.security-label {
-  font-size: 13px;
-  color: var(--c3-text-secondary);
-  font-family: 'Courier New', monospace;
-}
-
-.security-badge {
+.badge {
   font-size: 12px;
   font-weight: 600;
   padding: 3px 10px;
   border-radius: 20px;
 }
 
-.security-badge.blocked {
-  background: rgba(34, 211, 164, 0.12);
+.badge-secure {
+  background: rgba(16, 185, 129, 0.12);
   color: var(--c3-green);
 }
 
-.security-badge.exposed {
+.badge-danger {
   background: rgba(239, 68, 68, 0.12);
   color: var(--c3-red);
 }
 
-.security-overall {
+.security-banner {
   margin-top: 6px;
   padding: 10px 14px;
   border-radius: 8px;
@@ -186,19 +294,19 @@ body {
   text-align: center;
 }
 
-.security-overall.secure {
-  background: rgba(34, 211, 164, 0.08);
+.banner-secure {
+  background: rgba(16, 185, 129, 0.08);
   color: var(--c3-green);
-  border: 1px solid rgba(34, 211, 164, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
-.security-overall.warning {
+.banner-warning {
   background: rgba(239, 68, 68, 0.08);
   color: var(--c3-red);
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
-/* ── Footer ───────────────────────────────────────────────────────────────── */
+/* ── Shell Footer ─────────────────────────────────────────────────────────── */
 
 .shell-footer {
   text-align: center;
@@ -210,5 +318,5 @@ body {
 .shell-footer p {
   font-size: 11px;
   color: var(--c3-text-secondary);
-  opacity: 0.6;
+  opacity: 0.7;
 }
