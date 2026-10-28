@@ -40,12 +40,7 @@ export default defineConfig({
           build: {
             outDir: path.join(__dirname, 'dist-electron/main'),
             rollupOptions: {
-              external: [
-                'electron',
-                // Keep @c3/foundation as external — it will be resolvable at runtime
-                '@c3/foundation',
-                '@c3/contracts',
-              ],
+              external: ['electron'],
             },
           },
           resolve: {

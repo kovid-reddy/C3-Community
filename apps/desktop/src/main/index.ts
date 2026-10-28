@@ -38,13 +38,12 @@ function getPreloadPath(): string {
   return path.join(__dirname, '../preload/index.js');
 }
 
-function getRendererUrl(): string {
-  if (isDev) {
-    // Development: Vite dev server URL (set by vite-plugin-electron via VITE_DEV_SERVER_URL)
-    return process.env['VITE_DEV_SERVER_URL'] ?? 'http://localhost:5173';
+function getRendererUrl(): { url: string; isFile: boolean } {
+  if (isDev && process.env['VITE_DEV_SERVER_URL']) {
+    return { url: process.env['VITE_DEV_SERVER_URL'], isFile: false };
   }
-  // Production: load built renderer HTML file from dist-renderer
-  return path.join(__dirname, '../../dist-renderer/index.html');
+  // Production or Standalone Build: load built renderer HTML file from dist-renderer
+  return { url: path.join(__dirname, '../../dist-renderer/index.html'), isFile: true };
 }
 
 function createMainWindow(): BrowserWindow {
@@ -80,7 +79,6 @@ function createMainWindow(): BrowserWindow {
 
   // Prevent navigation to arbitrary URLs — only allow our known origin
   win.webContents.on('will-navigate', (event, url) => {
-    const rendererUrl = getRendererUrl();
     const isLocalFile = url.startsWith('file://');
     const isDevServer = isDev && url.startsWith('http://localhost');
     if (!isLocalFile && !isDevServer) {
@@ -123,15 +121,15 @@ function createMainWindow(): BrowserWindow {
 
 async function loadRenderer(win: BrowserWindow): Promise<void> {
   const target = getRendererUrl();
-  logger.info('Loading renderer', { metadata: { isDev, target } });
+  logger.info('Loading renderer', { metadata: { isDev, target: target.url, isFile: target.isFile } });
 
-  if (isDev) {
-    await win.loadURL(target);
+  if (target.isFile) {
+    await win.loadFile(target.url);
+  } else {
+    await win.loadURL(target.url);
     if (isDev) {
       win.webContents.openDevTools({ mode: 'detach' });
     }
-  } else {
-    await win.loadFile(target);
   }
 }
 

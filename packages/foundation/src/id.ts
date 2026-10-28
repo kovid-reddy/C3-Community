@@ -3,7 +3,14 @@
  * Cryptographically strong ID generation abstraction.
  */
 
-import { randomUUID } from 'crypto';
+function getUUID(): string {
+  if (typeof globalThis !== 'undefined' && globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+  // Fallback for older Node runtimes if needed
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  return (require('crypto') as typeof import('crypto')).randomUUID();
+}
 
 export interface IdGenerator {
   generate(prefix?: string): string;
@@ -15,7 +22,7 @@ export class CryptoIdGenerator implements IdGenerator {
    * Generates a cryptographically strong UUID v4, optionally prefixed (e.g., 'usr_550e8400-e29b-41d4-a716-446655440000').
    */
   generate(prefix?: string): string {
-    const uuid = randomUUID();
+    const uuid = getUUID();
     if (prefix) {
       const cleanPrefix = prefix.endsWith('_') ? prefix : `${prefix}_`;
       return `${cleanPrefix}${uuid}`;
