@@ -5,8 +5,10 @@
  *  - The provider-independent authentication service interface (IAuthService)
  *  - All authentication domain types from @c3/contracts
  *  - The mock adapter for development and testing
+ *  - The authentication application service (Stage 3B)
+ *  - The state machine utilities (Stage 3B)
  *
- * Stage 3A: contracts + mock adapter only.
+ * Stage 3B: auth application service + session state management.
  * Do NOT import Cognito, AWS SDK, Electron, or React from this package.
  */
 
@@ -35,13 +37,12 @@ export {
 
 // ── Legacy re-exports (Stage 2 compatibility) ──────────────────────────────
 // The original AuthProviderAdapter interface is preserved for backward compatibility.
-// New adapters should implement IAuthService instead.
+// New code should implement IAuthService instead.
 export type { AuthService, AuthSession, User, RegistrationParams, LoginCredentials } from '@c3/contracts';
 
 /**
  * @deprecated Use IAuthService from @c3/contracts instead.
  * Retained for backward compatibility with Stage 2 stubs.
- * Will be removed in Stage 3B when Cognito adapter is implemented.
  */
 export interface AuthProviderAdapter {
   register(details: import('@c3/contracts').RegistrationParams): Promise<import('@c3/contracts').User>;
@@ -59,3 +60,23 @@ export {
   MOCK_SEED_RESET_CODE,
 } from './mock-adapter';
 export type { MockAuthAdapterOptions } from './mock-adapter';
+
+// ── Application service (Stage 3B) ─────────────────────────────────────────
+export { AuthApplicationService } from './auth-service';
+export type {
+  AuthStateListener,
+  AuthStateUnsubscribeFn,
+  AuthApplicationServiceOptions,
+} from './auth-service';
+
+// ── State machine utilities (Stage 3B) ─────────────────────────────────────
+export {
+  unauthenticated,
+  authenticating,
+  authenticated,
+  restoringSession,
+  authError,
+  isInProgress,
+  validateTransition,
+} from './state-machine';
+export type { TransitionResult } from './state-machine';

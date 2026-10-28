@@ -1,10 +1,11 @@
 # Authentication Architecture
 
-**Stage 3A — Contracts + Mock Implementation**
+**Through Stage 3B — Contracts + Mock Adapter + Application Service**
 
-> This document describes the authentication domain contracts established in Stage 3A and the
-> deterministic mock adapter. No production authentication (Cognito, AWS, OAuth) has been
-> implemented. Sections marked **[Future]** describe planned work for later stages.
+> This document covers Stage 3A (auth domain contracts, mock adapter) and Stage 3B
+> (authentication application service, session state management).
+> No production authentication (Cognito, AWS, OAuth), IPC wiring, renderer UI, or session
+> persistence has been implemented. Sections marked **[Future]** describe planned work.
 
 ---
 
@@ -20,6 +21,7 @@
 8. [Boundary Rule — Why Renderer, Preload and Main Must Not Own Auth Logic](#8-boundary-rule)
 9. [How a Future Cognito Adapter Will Implement the Same Contract](#9-future-cognito-adapter)
 10. [Dependency Rules](#10-dependency-rules)
+11. [Stage 3B — Authentication Application Service](#11-stage-3b-authentication-application-service)
 
 ---
 
@@ -383,7 +385,7 @@ The `IAuthService` interface will not change. The Cognito adapter will be a drop
 replacement for `MockAuthAdapter`.
 
 ```typescript
-// Future usage (main process, Stage 3B)
+// Future usage (main process, Stage 3C+)
 import { CognitoAuthAdapter } from '@c3/auth';
 const authService: IAuthService = new CognitoAuthAdapter({ userPoolId, clientId });
 ```
@@ -402,3 +404,189 @@ const authService: IAuthService = new CognitoAuthAdapter({ userPoolId, clientId 
 
 The `verify-deps.js` script enforces these rules at the package dependency level.
 File-level import checks are the responsibility of TypeScript compilation and code review.
+
+---
+
+## 11. Stage 3B — Authentication Application Service
+
+### Overview
+
+Stage 3B adds the **authentication application service** layer that sits between callers
+(main process, future IPC handlers) and the `IAuthService` adapter. It owns the authoritative
+`AuthState`, publishes state changes to observers, and enforces the concurrency policy.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Caller (main process, tests)                                   │
+│  const svc = new AuthApplicationService(adapter);              │
+│  svc.subscribe(state => ...);                                   │
+│  await svc.signIn({ email, password });                         │
+└───────────────────┬─────────────────────────────────────────────┘
+                    │ DI
+┌───────────────────▼─────────────────────────────────────────────┐
+│  AuthApplicationService   packages/auth/src/auth-service.ts     │
+│  • Manages AuthState                                            │
+│  • Notifies observers (subscribe / unsubscribe)                 │
+│  • Prevents stale results via generation counter               │
+│  • Rejects concurrent operations with ERR_AUTH_INTERNAL         │
+└───────────────────┬─────────────────────────────────────────────┘
+                    │ implements IAuthService
+        ┌───────────┴───────────┐
+┌───────▼─────────┐   ┌────────▼──────────────────────────┐
+│ MockAuthAdapter │   │  [Future] CognitoAuthAdapter       │
+└─────────────────┘   └────────────────────────────────────┘
+```
+
+### Files Added in Stage 3B
+
+| File | Purpose |
+|---|---|
+| `packages/auth/src/state-machine.ts` | Pure state transition constructors, validator, `isInProgress` guard |
+| `packages/auth/src/auth-service.ts` | `AuthApplicationService` — orchestrates adapter, manages state |
+| `tests/unit/auth/state-machine.test.ts` | 32 state machine tests |
+| `tests/unit/auth/auth-service.test.ts` | 51 application service tests |
+
+### Application Service API
+
+```typescript
+class AuthApplicationService {
+  // Read-only current state
+  get state(): AuthState;
+
+  // Observer registration
+  subscribe(listener: AuthStateListener): AuthStateUnsubscribeFn;
+
+  // Auth operations (delegate to adapter + manage state)
+  signUp(input: SignUpInput): Promise<AuthResult<AuthUser>>;
+  signIn(input: SignInInput): Promise<AuthResult<AuthSessionData>>;
+  signOut(): Promise<AuthResult<void>>;
+  restoreSession(): Promise<AuthResult<AuthSessionData | null>>;
+  getCurrentUser(): Promise<AuthResult<AuthUser | null>>;
+  requestPasswordReset(input: PasswordResetRequest): Promise<AuthResult<void>>;
+  confirmPasswordReset(input: PasswordResetConfirmation): Promise<AuthResult<void>>;
+
+  // Error recovery
+  acknowledgeError(): void;
+}
+```
+
+### Adapter Injection
+
+The adapter is injected at construction time:
+
+```typescript
+// Test
+const adapter = new MockAuthAdapter({ clock: new FakeClock() });
+const service = new AuthApplicationService(adapter);
+
+// Future production (Stage 3C+)
+const adapter = new CognitoAuthAdapter({ userPoolId, clientId });
+const service = new AuthApplicationService(adapter);
+```
+
+The service depends only on the `IAuthService` interface, not any concrete adapter.
+
+### State Transitions (Stage 3B enforcement)
+
+The `state-machine.ts` module validates every transition before it is applied.
+Illegal transitions are logged (if a logger is injected) and rejected — the service
+never silently applies a forbidden state.
+
+| Operation | State before | States emitted | State after |
+|---|---|---|---|
+| `signIn` (success) | unauthenticated / error | authenticating(signIn) → authenticated | authenticated |
+| `signIn` (failure) | unauthenticated / error | authenticating(signIn) → unauthenticated | unauthenticated |
+| `signUp` (success) | unauthenticated | authenticating(signUp) → unauthenticated | unauthenticated |
+| `signUp` (failure) | unauthenticated | authenticating(signUp) → unauthenticated | unauthenticated |
+| `signOut` (success) | authenticated | authenticating(signOut) → unauthenticated | unauthenticated |
+| `signOut` (already out) | unauthenticated | *(none — no-op)* | unauthenticated |
+| `restoreSession` (found) | unauthenticated | restoringSession → authenticated | authenticated |
+| `restoreSession` (none) | unauthenticated | restoringSession → unauthenticated | unauthenticated |
+| `restoreSession` (expired) | unauthenticated | restoringSession → error | error |
+| `restoreSession` (already auth) | authenticated | *(none — short-circuits)* | authenticated |
+| `acknowledgeError()` | error | unauthenticated | unauthenticated |
+
+**signUp does not automatically authenticate.** After a successful sign-up, the state
+returns to `unauthenticated`. The user must call `signIn` separately. This is intentional:
+in production (Cognito), sign-up requires email verification before sign-in is possible.
+
+### Session Restoration
+
+`restoreSession()` is intended to be called once at application startup to recover any
+existing in-memory session from the adapter.
+
+- If already `authenticated`, it short-circuits and returns the current session — no adapter
+  call is made, no state transition occurs.
+- If no session exists, it transitions through `restoringSession → unauthenticated`.
+- If a session is found but expired, it transitions through `restoringSession → error`.
+  Callers should invoke `acknowledgeError()` to return to `unauthenticated` and allow retry.
+
+### State Observation
+
+```typescript
+const unsubscribe = service.subscribe(state => {
+  switch (state.kind) {
+    case 'unauthenticated':   /* show login screen */ break;
+    case 'authenticating':    /* show spinner */       break;
+    case 'authenticated':     /* show app */           break;
+    case 'restoringSession':  /* show loading */       break;
+    case 'error':             /* show error */         break;
+  }
+});
+
+// Later:
+unsubscribe(); // listener is removed and receives no further events
+```
+
+Listeners are called synchronously during state transitions. Listeners that throw are
+caught and do not crash the service.
+
+### Concurrency Policy
+
+The service uses a **generation counter** to prevent stale async results from overwriting
+newer state:
+
+1. Each operation start increments a counter and captures the current generation number.
+2. When the operation resolves, it checks whether the captured generation still matches.
+3. If not (a newer operation has started), the stale result is **discarded** — state is not updated.
+
+Additionally, if an operation is already in progress when a new one is requested:
+- The new operation is **rejected immediately** with `ERR_AUTH_INTERNAL`.
+- The in-progress operation continues unaffected.
+
+`signOut` is exempt from the in-progress guard when the state is `unauthenticated`
+(it is a no-op in that case and returns success immediately).
+
+### Failure Recovery
+
+Failed operations MUST NOT leave the service permanently stuck in an in-progress state:
+
+- If the adapter throws unexpectedly, the service catches the exception and transitions
+  to `unauthenticated`.
+- If `restoreSession` fails with a domain error, the service transitions to `error`.
+  Call `acknowledgeError()` to move to `unauthenticated`.
+- An invalid state transition (programming error) is detected and logged. If the current
+  state is in-progress, the service falls back to `unauthenticated` to prevent deadlock.
+
+### Security Boundaries (Stage 3B)
+
+- Passwords are passed through to the adapter only — never stored on the service.
+- State change events carry `AuthSessionData` (which contains tokens) only in the
+  `authenticated` state. **Observers must not log session tokens.**
+- Stack traces from adapter exceptions are caught and suppressed — they are never returned
+  through public `AuthResult` error messages.
+- `ERR_AUTH_INTERNAL` is returned for unexpected failures; the raw exception is logged
+  (via injected Logger) but not exposed to callers.
+
+### What Remains Unimplemented After Stage 3B
+
+| Item | Future Stage |
+|---|---|
+| Cognito adapter (`CognitoAuthAdapter`) | Stage 3C+ |
+| IPC channels for auth operations (main process) | Stage 3C+ |
+| Renderer authentication UI | Stage 3C+ |
+| Session persistence to OS secure storage | Stage 3C+ |
+| Email confirmation flow | Stage 3C+ |
+| Refresh-token rotation | Stage 3C+ |
+| Rate limiting | Stage 3C+ |
+| Multi-device session management | Post-MVP |
