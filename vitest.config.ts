@@ -10,8 +10,10 @@ export default defineConfig({
     alias: {
       '@c3/contracts': path.resolve(__dirname, 'packages/contracts/src'),
       '@c3/foundation': path.resolve(__dirname, 'packages/foundation/src'),
+      '@c3/auth': path.resolve(__dirname, 'packages/auth/src'),
       'react': path.resolve(__dirname, 'apps/desktop/node_modules/react'),
       'react-dom': path.resolve(__dirname, 'apps/desktop/node_modules/react-dom'),
     },
   },
 });
+

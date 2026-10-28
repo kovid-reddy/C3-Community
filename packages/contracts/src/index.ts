@@ -300,7 +300,13 @@ export interface JobService {
 }
 
 // ==========================================
-// 3. IPC CONTRACTS & BOUNDARY
+// 3. AUTHENTICATION CONTRACTS
+// ==========================================
+
+export * from './auth';
+
+// ==========================================
+// 4. IPC CONTRACTS & BOUNDARY
 // ==========================================
 
 export * from './ipc';
